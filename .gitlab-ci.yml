@@ -1,0 +1,69 @@
+# Reference: https://www.exclamationlabs.com/blog/continuous-deployment-to-npm-using-gitlab-ci/
+# GitLab uses docker in the background, so we need to specify the
+# image versions. This is useful because we're freely to use multiple
+# node versions to work with it. They come from the docker repo.
+
+# You specify the stages. Those are the steps that GitLab will go through.
+# Order matters.
+stages:
+  - test
+  - build
+  - deploy
+
+# to cache both npm modules and Cypress binary we use environment variables
+# to point at the folders we can list as paths in "cache" job settings
+variables:
+  # npm_config_cache: /builds/cypress-io/staking-dashboard/.npm
+  CYPRESS_CACHE_FOLDER: /builds/cypress-io/staking-dashboard/cache/Cypress
+
+# cache using branch name
+# https://gitlab.com/help/ci/caching/index.md
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    # - .npm - for yarn???
+    - cache/Cypress
+    - node_modules
+
+# Run the project tests
+test:
+  stage: test
+  # See https://github.com/cypress-io/cypress/issues/350#issuecomment-503231128
+  image: cypress/browsers:node10.2.1-chrome74
+  before_script:
+    - yarn install --frozen-lockfile
+    # show where the Cypress test runner binaries are cached
+    - $(yarn bin)/cypress cache path
+    # show all installed versions of Cypress binary
+    - $(yarn bin)/cypress cache list
+    - $(yarn bin)/cypress verify
+  script:
+    - yarn test
+    - yarn start & npx wait-on http://localhost:3000
+    - $(yarn bin)/cypress run --browser chrome
+
+# Run a full build
+build:
+  stage: build
+  image: node:8.11.2
+  only:
+    - master
+  artifacts:
+    paths:
+      - build
+  before_script:
+    - yarn install --frozen-lockfile
+  script:
+    - yarn build
+
+# Deploy the app
+deploy:
+  stage: deploy
+  image: node:8.11.2
+  dependencies:
+    - build
+  only:
+    - master
+  script:
+    - yarn add global netlify-cli
+    - netlify deploy --site $NETLIFY_SITE_ID --auth $NETLIFY_AUTH_TOKEN --prod

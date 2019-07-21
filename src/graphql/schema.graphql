@@ -1,0 +1,81 @@
+type Query {
+  balance(address: String!): [Balance!]
+  accountInformation(address: String!): AccountInformation!
+  stakingDelegations(address: String!): [Delegation!]
+  prices(currency: String!, versus: String!): Price!
+  coins: [Coin!]
+  auctions: [AuctionResponse!]
+  height: Status!
+}
+
+type Balance {
+  denom: String!
+  amount: String!
+}
+
+type AccountInformation {
+  type: String!
+  value: Account!
+}
+
+type Account {
+  account_number: String!
+  address: String!
+  coins: [AccountCoin!]
+  public_key: String!
+  sequence: String!
+}
+
+type AccountCoin {
+  denom: String!
+  amount: String!
+}
+
+type Delegation {
+  delegator_address: String!
+  validator_address: String!
+  shares: String!
+  height: Int!
+}
+
+type Price {
+  price: Float!
+}
+
+type Coin {
+  id: String!
+  symbol: String!
+  name: String!
+}
+
+type AuctionResponse {
+  type: String!
+  value: BaseAuction!
+}
+
+type BaseAuction {
+  baseAuction: Auction!
+}
+
+type Auction {
+  auction_id: String!
+  lot: Balance!
+  bid: Balance!
+  bidder: String!
+  end_time: String!
+  max_end_time: String!
+  time_remaining: Int!
+  auction_status: String!
+}
+
+type Status {
+  result: Result!
+}
+
+type Result {
+  sync_info: SyncInfo!
+}
+
+type SyncInfo {
+  latest_block_height: String!
+}
